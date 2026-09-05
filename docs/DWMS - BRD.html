@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Requirements Document (BRD) - Multi-Tenant B2B WMS</title>
+  <style>
+    :root {
+      --primary: #1e40af;
+      --primary-light: #eff6ff;
+      --text-dark: #1f2937;
+      --text-muted: #4b5563;
+      --border-color: #e5e7eb;
+      --bg-alt: #f9fafb;
+      --accent: #2563eb;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-dark);
+      line-height: 1.6;
+      background-color: #f3f4f6;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 3rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    header {
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+      background-color: var(--bg-alt);
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .meta-item span {
+      font-weight: 600;
+      color: var(--text-muted);
+      display: block;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      color: var(--primary);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.4rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      color: var(--text-dark);
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      margin-bottom: 1rem;
+      color: var(--text-dark);
+    }
+
+    ul, ol {
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+    }
+
+    li {
+      margin-bottom: 0.4rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.92rem;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background-color: var(--bg-alt);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background-color: var(--primary-light);
+      color: var(--primary);
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+      .container {
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Business Requirements Document (BRD)</h1>
+      <p>Multi-Tenant B2B Warehouse Management System (WMS)</p>
+      
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span>Project Name</span>
+          B2B Dealer WMS Platform
+        </div>
+        <div class="meta-item">
+          <span>Target Audience</span>
+          Wholesale Distributors & Dealers
+        </div>
+        <div class="meta-item">
+          <span>Tech Stack</span>
+          React, TypeScript, NestJS, PostgreSQL
+        </div>
+        <div class="meta-item">
+          <span>Document Version</span>
+          1.0.0
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Section 1 -->
+      <section>
+        <h2>1. Executive Summary & Business Scope</h2>
+        
+        <h3>1.1 Project Overview</h3>
+        <p>The Multi-Tenant B2B Warehouse Management System (WMS) is a cloud-based web application designed specifically for product distributors and wholesale dealers. The system manages the end-to-end operational lifecycle: acquiring goods directly from manufacturers, managing stock across physical warehouses, and selling/delivering items to retail shops.</p>
+
+        <h3>1.2 Core Business Goals</h3>
+        <ul>
+          <li><strong>Multi-Tenant Isolation:</strong> Enable independent wholesale dealers to operate securely on a shared infrastructure without data exposure risks.</li>
+          <li><strong>Inventory Accuracy:</strong> Eliminate stock discrepancies using an append-only audit ledger (<code>stock_movements</code>) and real-time reservation logic.</li>
+          <li><strong>Financial Risk Mitigation:</strong> Enforce automated credit limit checks before approving outbound sales orders to retail shops.</li>
+          <li><strong>Operational Traceability:</strong> Track full chain of custody for goods from purchase order (PO) receipt to final delivery proof at retail locations.</li>
+        </ul>
+
+        <h3>1.3 Out of Scope</h3>
+        <ul>
+          <li>Direct-to-Consumer (D2C) e-commerce storefronts.</li>
+          <li>Point of Sale (POS) register operations for retail shop counters.</li>
+          <li>Integrated manufacturing line management.</li>
+        </ul>
+      </section>
+
+      <!-- Section 2 -->
+      <section>
+        <h2>2. User Roles & Access Control (RBAC)</h2>
+        <p>The system supports five distinct user types across two operational levels:</p>
+
+        <h3>System Level</h3>
+        <ul>
+          <li><strong>Platform Super Admin:</strong> Onboards dealers, monitors tenant metrics, manages platform billing, and maintains global configurations.</li>
+        </ul>
+
+        <h3>Dealer Level (Tenant-Scoped)</h3>
+        <ul>
+          <li><strong>Dealer Admin / Owner:</strong> Full access to company setup, staff creation, financial reporting, and warehouse configuration.</li>
+          <li><strong>Warehouse Manager:</strong> Approves Purchase Orders and Sales Orders, manages stock adjustments, overrides inventory counts, and creates product records.</li>
+          <li><strong>Warehouse Staff:</strong> Performs stock receiving (GRN), executes pick/pack workflows, logs stock movements, and views inventory counts.</li>
+          <li><strong>Delivery Driver:</strong> Views assigned delivery routes, marks order dispatch/delivery states, and captures proof of delivery (POD).</li>
+        </ul>
+      </section>
+
+      <!-- Section 3 -->
+      <section>
+        <h2>3. Functional Requirements (FR)</h2>
+
+        <h3>FR-1: Multi-Tenancy & Dealer Onboarding</h3>
+        <ul>
+          <li><strong>FR-1.1 Automated Tenant Onboarding:</strong> The system must execute an atomic database transaction during registration that inserts:
+            <ol>
+              <li>A new record in <code>dealers</code>.</li>
+              <li>The initial <code>users</code> account with <code>ADMIN</code> privileges.</li>
+              <li>A default <code>warehouses</code> record ("Main Warehouse").</li>
+            </ol>
+          </li>
+          <li><strong>FR-1.2 Data Isolation:</strong> Every query across tenant-scoped tables must enforce filtering by <code>dealer_id</code> extracted from the validated JWT token.</li>
+        </ul>
+
+        <h3>FR-2: Contact Directory (CRM)</h3>
+        <ul>
+          <li><strong>FR-2.1 Manufacturer Management:</strong> Managers must be able to record manufacturer details including lead times (in days), contact persons, tax IDs, and return addresses.</li>
+          <li><strong>FR-2.2 Shop Management:</strong> Managers must be able to manage retail shop profiles, including distinct shipping and billing addresses, primary contact details, approved credit limits, and active balance tracking.</li>
+          <li><strong>FR-2.3 Credit Restriction:</strong> The system must block order approval if an order's value causes a shop's <code>current_balance</code> to exceed its <code>credit_limit</code>.</li>
+        </ul>
+
+        <h3>FR-3: Product Catalog & Pricing</h3>
+        <ul>
+          <li><strong>FR-3.1 SKU Management:</strong> Products must be indexed by a unique Stock Keeping Unit (SKU) per dealer, with scannable barcode fields (EAN/UPC), category IDs, and supplier cross-references.</li>
+          <li><strong>FR-3.2 Two-Tier Pricing:</strong> Each product must store a <code>cost_price</code> (purchase cost from manufacturer) and a <code>selling_price</code> (wholesale cost billed to shops).</li>
+          <li><strong>FR-3.3 Low Stock Thresholds:</strong> Products must support a configurable <code>reorder_level</code> triggering automated alerts when available stock drops below the threshold.</li>
+        </ul>
+
+        <h3>FR-4: Warehouse & Real-time Inventory Management</h3>
+        <ul>
+          <li><strong>FR-4.1 Multi-Warehouse Support:</strong> Dealers must be able to define multiple physical facilities with unique codes (e.g., <code>WH-01</code>).</li>
+          <li><strong>FR-4.2 Real-time Stock Metrics:</strong> Inventory must track three distinct values per product/warehouse pair:
+            <ul>
+              <li><code>quantity_on_hand</code>: Physical count inside the building.</li>
+              <li><code>quantity_allocated</code>: Locked stock reserved for approved Sales Orders.</li>
+              <li><code>Available Quantity</code>: Dynamically calculated as <code>quantity_on_hand - quantity_allocated</code>.</li>
+            </ul>
+          </li>
+          <li><strong>FR-4.3 Append-Only Audit Ledger:</strong> Direct mutation of stock counts without an accompanying <code>stock_movements</code> log entry is strictly prohibited. Movement types include <code>PO_RECEIPT</code>, <code>SO_DISPATCH</code>, <code>ADJUSTMENT</code>, <code>TRANSFER_IN</code>, and <code>TRANSFER_OUT</code>.</li>
+        </ul>
+
+        <h3>FR-5: Inbound Procurement (Manufacturer &rarr; Warehouse)</h3>
+        <ul>
+          <li><strong>FR-5.1 Purchase Order Lifecycle:</strong> Support status state transitions: <code>DRAFT</code> &rarr; <code>ORDERED</code> &rarr; <code>PARTIALLY_RECEIVED</code> &rarr; <code>COMPLETED</code> / <code>CANCELLED</code>.</li>
+          <li><strong>FR-5.2 Goods Receipt Note (GRN):</strong> Warehouse staff must log received quantities against open PO line items.</li>
+          <li><strong>FR-5.3 Partial Deliveries & Backorders:</strong> Receiving partial shipments must update <code>quantity_on_hand</code>, adjust item counts received, and leave remaining quantities on open backorder status.</li>
+        </ul>
+
+        <h3>FR-6: Outbound Fulfillment (Warehouse &rarr; Shop)</h3>
+        <ul>
+          <li><strong>FR-6.1 Sales Order Lifecycle:</strong> Support status state transitions: <code>PENDING</code> &rarr; <code>APPROVED</code> &rarr; <code>PICKING</code> &rarr; <code>SHIPPED</code> &rarr; <code>DELIVERED</code> / <code>CANCELLED</code>.</li>
+          <li><strong>FR-6.2 Stock Allocation Lock:</strong> Approving a Sales Order must increment <code>quantity_allocated</code> without decreasing <code>quantity_on_hand</code> until physical dispatch.</li>
+          <li><strong>FR-6.3 Pick & Pack Generation:</strong> The system must generate consolidated Pick Lists grouped by warehouse bin locations.</li>
+          <li><strong>FR-6.4 Dispatch & Settlement:</strong> Marking an order as <code>DELIVERED</code> must decrement <code>quantity_on_hand</code> and <code>quantity_allocated</code>, increase the shop's <code>current_balance</code>, and record a <code>SO_DISPATCH</code> stock movement.</li>
+        </ul>
+      </section>
+
+      <!-- Section 4 -->
+      <section>
+        <h2>4. Non-Functional Requirements (NFR)</h2>
+
+        <h3>NFR-1: Security & Compliance</h3>
+        <ul>
+          <li><strong>Authentication:</strong> Stateless authentication via JWT signed using HS256/RS256 with 15-minute expiration and HTTP-only refresh tokens.</li>
+          <li><strong>Authorization:</strong> Role-Based Access Control (RBAC) enforced via server-side guards on every API endpoint.</li>
+          <li><strong>Tenant Protection:</strong> Zero tolerance for Insecure Direct Object Reference (IDOR) vulnerabilities; requests querying unowned <code>dealer_id</code> parameters must yield a <code>404 Not Found</code> response.</li>
+        </ul>
+
+        <h3>NFR-2: Performance & Data Integrity</h3>
+        <ul>
+          <li><strong>Concurrency Handling:</strong> Stock reservation workflows must use explicit row-level database locking (<code>SELECT ... FOR UPDATE</code>) or atomic database transactions to eliminate race conditions during simultaneous orders.</li>
+          <li><strong>API Latency:</strong> Read queries for stock levels and order dashboards must return within 200ms at p95 under standard load.</li>
+        </ul>
+
+        <h3>NFR-3: Reliability & Auditability</h3>
+        <ul>
+          <li><strong>Financial Integrity:</strong> All price and monetary fields must use <code>NUMERIC(12,2)</code> precision to prevent floating-point rounding errors.</li>
+          <li><strong>Data Immutability:</strong> Historical stock movements and ledger transactions must be read-only and preserved for financial and operational auditing.</li>
+        </ul>
+      </section>
+
+      <!-- Section 5 -->
+      <section>
+        <h2>5. Summary Matrix of Requirements & Modules</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Module ID</th>
+              <th>Primary Business Responsibility</th>
+              <th>Associated Database Tables</th>
+              <th>Key Operations</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge">MOD-01</span></td>
+              <td>Identity & Access</td>
+              <td><code>dealers</code>, <code>users</code></td>
+              <td>Registration transaction, Auth, RBAC guards</td>
+            </tr>
+            <tr>
+              <td><span class="badge">MOD-02</span></td>
+              <td>Contact Directory</td>
+              <td><code>manufacturers</code>, <code>shops</code></td>
+              <td>Supplier tracking, Credit limit enforcement</td>
+            </tr>
+            <tr>
+              <td><span class="badge">MOD-03</span></td>
+              <td>Inventory Core</td>
+              <td><code>warehouses</code>, <code>products</code>, <code>inventory</code>, <code>stock_movements</code></td>
+              <td>Real-time stock counts, Ledger adjustments, Bin locations</td>
+            </tr>
+            <tr>
+              <td><span class="badge">MOD-04</span></td>
+              <td>Procurement</td>
+              <td><code>purchase_orders</code>, <code>purchase_order_items</code></td>
+              <td>PO issuance, GRN receiving, Backorder tracking</td>
+            </tr>
+            <tr>
+              <td><span class="badge">MOD-05</span></td>
+              <td>Outbound Fulfillment</td>
+              <td><code>sales_orders</code>, <code>sales_order_items</code></td>
+              <td>SO reservation, Pick list generation, Dispatching, Proof of delivery</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+</body>
+</html>

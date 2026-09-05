@@ -12,10 +12,7 @@ export class UserAddress extends BaseEntity {
   label: string;
 
   @Column()
-  line1: string;
-
-  @Column({ nullable: true })
-  line2: string;
+  street: string;
 
   @Column()
   city: string;

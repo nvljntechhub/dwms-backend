@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsString, IsBoolean } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateUserAddressDto {
   @IsNotEmpty()
@@ -7,11 +8,7 @@ export class CreateUserAddressDto {
 
   @IsNotEmpty()
   @IsString()
-  line1: string;
-
-  @IsOptional()
-  @IsString()
-  line2?: string;
+  street: string;
 
   @IsNotEmpty()
   @IsString()
@@ -29,6 +26,12 @@ export class CreateUserAddressDto {
   @IsString()
   country: string;
 
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value === 'true' || value === '1';
+    }
+    return value;
+  })
   @IsNotEmpty()
   @IsBoolean()
   isDefault: boolean;

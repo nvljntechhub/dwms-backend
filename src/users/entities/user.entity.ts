@@ -3,7 +3,10 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
+  RelationId,
   UpdateDateColumn,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -11,6 +14,7 @@ import { HASH_SALT_ROUNDS } from 'src/config/hash.config';
 import { UserRole } from 'src/common/utils/enums/user-role';
 import { UserAddress } from 'src/user-addresses/entities/user-address.entity';
 import { BaseEntity } from 'src/common/utils/BaseEntity';
+import { Dealer } from 'src/dealers/entities/dealer.entity';
 
 @Entity()
 export class User extends BaseEntity {
@@ -23,8 +27,8 @@ export class User extends BaseEntity {
   @Column({ unique: true })
   email: string;
 
-  @Column({ unique: true })
-  phoneNumber: string;
+  @Column({ unique: true, nullable: true })
+  phoneNumber?: string;
 
   @Column({ select: false })
   password: string;
@@ -38,15 +42,25 @@ export class User extends BaseEntity {
   @Column({
     type: 'enum',
     enum: UserRole,
-    default: UserRole.USER,
+    default: UserRole.STAFF,
   })
   role: UserRole;
+
+  @Column({ default: false })
+  isVerified: boolean;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt?: Date;
 
   @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt?: Date;
+
+  @RelationId((user: User) => user.dealer)
+  dealerId?: string;
+
+  @ManyToOne(() => Dealer, (dealer) => dealer.users, { nullable: true })
+  @JoinColumn({ name: 'dealer_id', referencedColumnName: 'id' })
+  dealer?: Dealer;
 
   @OneToMany(() => UserAddress, (address) => address.user, {
     cascade: ['insert'],

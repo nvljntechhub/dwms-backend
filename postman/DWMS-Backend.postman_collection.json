@@ -1,0 +1,543 @@
+{
+  "info": {
+    "_postman_id": "dwms-backend-api-v1",
+    "name": "DWMS Backend API",
+    "description": "API documentation for the DWMS NestJS backend.\n\nBase URL: `{{baseUrl}}` (default: http://localhost:5001/api/v1)\n\nAuth endpoints return an `ApiResponse` wrapper:\n```json\n{\n  \"statusCode\": 200,\n  \"message\": \"...\",\n  \"data\": { ... }\n}\n```",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userAddressId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "appUrl",
+      "value": "http://localhost:5001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints (`/auth`)",
+      "item": [
+        {
+          "name": "Sign In",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signIn",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "signIn"
+              ]
+            },
+            "description": "Authenticate a user with email and password.\n\n**Request body** (`SignInDto):\n| Field | Type | Required |\n|-------|------|----------|\n| email | string (email) | Yes |\n| password | string | Yes |\n\n**Response** `200 OK` \u2014 `ApiResponse` with `data.accessToken` and `data.refreshToken`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Register Dealer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phoneNumber\": \"+15550100\",\n  \"password\": \"Password123!\",\n  \"profileURL\": \"https://example.com/avatar.jpg\",\n  \"dealer\": {\n    \"name\": \"Acme Auto Group\",\n    \"email\": \"ops@acmeauto.com\",\n    \"taxId\": \"TAX-123456\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register-dealer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register-dealer"
+              ]
+            },
+            "description": "Register a new dealer (tenant) and the first user (`SUPER_ADMIN`) in one DB transaction. Also creates a default \"Main Warehouse\". Sets auth cookies and returns a JWT that includes `dealerId` so the client can go straight to the admin dashboard. Addresses are collected later in-app.\n\n**Request body** (`RegisterDto`):\n| Field | Type | Required |\n|-------|------|----------|\n| firstName | string | Yes |\n| lastName | string | Yes |\n| email | string (email) | Yes |\n| phoneNumber | string | No |\n| password | string | Yes |\n| profileURL | string | No |\n| dealer | CreateDealerDto | Yes |\n\n**CreateDealerDto** (nested in dealer):\n| Field | Type | Required |\n|-------|------|----------|\n| name | string | Yes |\n| email | string (email) | Yes |\n| taxId | string | No |\n\n**Response** `201 Created` \u2014 `ApiResponse` with user (`id`, `role`, `dealerId`, default `warehouse`) in `data`. Sets `access_token` and `refresh_token` cookies. JWT payload: `{ sub, dealerId, role }`."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"<verification-token-from-email>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ]
+            },
+            "description": "Verify a user's email using the JWT token sent in the registration verification email.\n\n**Request body** (`VerifyEmailDto`):\n| Field | Type | Required |\n|-------|------|----------|\n| token | string | Yes |\n\n**Response** `200 OK` \u2014 `ApiResponse` with verified user in `data`."
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Request a password reset email. Always returns the same success message whether or not the email is registered.\n\n**Request body** (`ForgotPasswordDto`):\n| Field | Type | Required |\n|-------|------|----------|\n| email | string (email) | Yes |\n\n**Response** `200 OK` \u2014 `If an account exists, we sent a reset link`.\n\nEmail link (when user exists): `{FRONTEND_URL}/login?type=password-reset&token=...`"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Reset Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"<reset-token-from-email>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/validate-reset-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "validate-reset-token"
+              ]
+            },
+            "description": "Validate a password-reset JWT when the reset screen opens. Does not consume the token.\n\n**Request body** (`ValidateResetTokenDto`):\n| Field | Type | Required |\n|-------|------|----------|\n| token | string | Yes |\n\n**Response** `200 OK` \u2014 token is valid.\n**Response** `401` \u2014 token invalid, expired, or already used."
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"<reset-token-from-email>\",\n  \"password\": \"NewPassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "Reset the user's password using the email JWT. Token is one-time use; refresh sessions are cleared after success.\n\n**Request body** (`ResetPasswordDto`):\n| Field | Type | Required |\n|-------|------|----------|\n| token | string | Yes |\n| password | string (min 8) | Yes |\n\n**Response** `200 OK` \u2014 password updated.\n**Response** `401` \u2014 token invalid, expired, or already used."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "User management endpoints (`/users`)",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "firstName",
+                  "value": "Jane",
+                  "type": "text"
+                },
+                {
+                  "key": "lastName",
+                  "value": "Smith",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "jane.smith@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "+15550101",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "Password123!",
+                  "type": "text"
+                },
+                {
+                  "key": "addresses",
+                  "value": "[{\"label\":\"Home\",\"street\":\"456 Oak Ave\",\"city\":\"Boston\",\"state\":\"MA\",\"postalCode\":\"02101\",\"country\":\"USA\",\"isDefault\":true}]",
+                  "type": "text",
+                  "description": "JSON string array of addresses"
+                },
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "src": [],
+                  "description": "Optional profile image (jpg/jpeg/png only, max 2MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "description": "Create a user with multipart/form-data.\n\n**Form fields:**\n| Field | Type | Required |\n|-------|------|----------|\n| firstName | text | Yes |\n| lastName | text | Yes |\n| email | text | Yes |\n| phoneNumber | text | No |\n| password | text | Yes |\n| addresses | text (JSON array string) | Yes |\n| profileImage | file | No |\n\nUploaded image is saved under `public/profiles/` and `profileURL` is set to `{APP_URL}/public/profiles/{filename}`.\n\n**Response** `201 Created` \u2014 `ApiResponse` with created user in `data`."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "description": "List users for the authenticated dealer only (from JWT `dealerId`). Requires `access_token` cookie.\n\n**Response** `200 OK` \u2014 `ApiResponse` with users array in `data`."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Get a single user by UUID.\n\n**Path params:**\n| Param | Type | Description |\n|-------|------|-------------|\n| id | uuid | User ID |\n\n**Response** `200 OK` \u2014 user in `data`.\n**Response** `404` \u2014 user not found."
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+15550999\",\n  \"profileURL\": \"https://example.com/new-avatar.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Partially update a user. All fields optional: firstName, lastName, email, phoneNumber, password, profileURL.\n\n**Response** `200 OK` \u2014 updated user in `data`.\n**Response** `404` \u2014 user not found.\n**Response** `409` \u2014 email already exists."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Delete a user and their addresses.\n\n**Response** `200 OK` \u2014 user deleted.\n**Response** `404` \u2014 user not found."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User Addresses",
+      "description": "User address CRUD endpoints (`/user-addresses`). Currently stub implementations in the service layer.",
+      "item": [
+        {
+          "name": "Create User Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "Not enforced by controller yet; included for future use",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Home\",\n  \"street\": \"123 Main St\",\n  \"city\": \"New York\",\n  \"state\": \"NY\",\n  \"postalCode\": \"10001\",\n  \"country\": \"USA\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user-addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user-addresses"
+              ]
+            },
+            "description": "Create a new user address.\n\n**Request body** (`CreateUserAddressDto`):\n| Field | Type | Required |\n|-------|------|----------|\n| label | string | Yes |\n| street | string | Yes |\n| city | string | Yes |\n| state | string | Yes |\n| postalCode | string | Yes |\n| country | string | Yes |\n| isDefault | boolean | Yes |"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All User Addresses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user-addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user-addresses"
+              ]
+            },
+            "description": "List all user addresses.\n\n**Response** \u2014 stub string from service."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Address by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user-addresses/{{userAddressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user-addresses",
+                "{{userAddressId}}"
+              ]
+            },
+            "description": "Get a single user address by ID.\n\n**Path params:**\n| Param | Type | Description |\n|-------|------|-------------|\n| id | number | Address ID |"
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Address",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Work\",\n  \"street\": \"789 Business Blvd\",\n  \"city\": \"Chicago\",\n  \"state\": \"IL\",\n  \"postalCode\": \"60601\",\n  \"country\": \"USA\",\n  \"isDefault\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user-addresses/{{userAddressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user-addresses",
+                "{{userAddressId}}"
+              ]
+            },
+            "description": "Partially update a user address.\n\n**Request body** (`UpdateUserAddressDto`) \u2014 all fields from `CreateUserAddressDto` are optional:\n| Field | Type | Required |\n|-------|------|----------|\n| label | string | No |\n| street | string | No |\n| city | string | No |\n| state | string | No |\n| postalCode | string | No |\n| country | string | No |\n| isDefault | boolean | No |"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User Address",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user-addresses/{{userAddressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user-addresses",
+                "{{userAddressId}}"
+              ]
+            },
+            "description": "Delete a user address by ID.\n\n**Path params:**\n| Param | Type | Description |\n|-------|------|-------------|\n| id | number | Address ID |"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

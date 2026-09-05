@@ -4,90 +4,173 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   Res,
-} from '@nestjs/common';
-import { ApiResponse } from 'src/common/utils/responses/api-response';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
-import { AuthService } from './auth.service';
+  UnauthorizedException,
+} from "@nestjs/common";
+import { ApiResponse } from "src/common/utils/responses/api-response";
+import { RegisterDto } from "./dto/register.dto";
+import { AuthService } from "./auth.service";
 import {
   emailSubject,
   emailTemplate,
+  errorMessages,
   successMessages,
-} from 'src/utils/properties.utils';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import { MailService } from 'src/mail/mail.service';
-import { SignInDto } from './dto/signin-dto';
-import type { SignOptions } from 'jsonwebtoken';
+} from "src/utils/properties.utils";
+import { ConfigService } from "@nestjs/config";
+import { MailService } from "src/mail/mail.service";
+import { SignInDto } from "./dto/signin-dto";
+import { VerifyEmailDto } from "./dto/verify-email.dto";
+import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+import { ValidateResetTokenDto } from "./dto/validate-reset-token.dto";
+import { ResetPasswordDto } from "./dto/reset-password.dto";
+import type { Request, Response } from "express";
+import {
+  AUTH_COOKIE_NAMES,
+  clearAuthCookies,
+  setAuthCookies,
+} from "./auth-cookie.utils";
 
-@Controller('api/auth')
+@Controller("auth")
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
-    private readonly jwtService: JwtService,
     private readonly mailService: MailService,
   ) {}
 
-  @Post('signIn')
+  @Post("login")
   @HttpCode(HttpStatus.OK)
   async signin(
     @Body() signInDto: SignInDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<ApiResponse> {
-    const { accessToken, refreshToken } =
+    const { accessToken, refreshToken, user } =
       await this.authService.signIn(signInDto);
-    return new ApiResponse(HttpStatus.OK, 'Logged In successfully', {
-      accessToken,
-      refreshToken,
-    });
+    setAuthCookies(response, this.configService, { accessToken, refreshToken });
+    return new ApiResponse(HttpStatus.OK, "Logged In successfully", user);
   }
 
-  @Post('register')
+  @Post("refresh")
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<ApiResponse> {
+    const refreshToken = request.cookies?.[AUTH_COOKIE_NAMES.refreshToken];
+    if (!refreshToken) {
+      throw new UnauthorizedException(errorMessages.TOKEN_EXPIRED);
+    }
+
+    const { accessToken, refreshToken: nextRefreshToken } =
+      await this.authService.refresh(refreshToken);
+    setAuthCookies(response, this.configService, {
+      accessToken,
+      refreshToken: nextRefreshToken,
+    });
+    return new ApiResponse(HttpStatus.OK, successMessages.TOKENS_REFRESHED);
+  }
+
+  @Post("logout")
+  @HttpCode(HttpStatus.OK)
+  async logout(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<ApiResponse> {
+    const refreshToken = request.cookies?.[AUTH_COOKIE_NAMES.refreshToken];
+    await this.authService.logout(refreshToken);
+    clearAuthCookies(response, this.configService);
+    return new ApiResponse(HttpStatus.OK, successMessages.LOGOUT_SUCCESSFUL);
+  }
+
+  @Post("register")
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() registerDto: CreateUserDto): Promise<ApiResponse> {
-    const { user } = await this.authService.register(registerDto);
-
-    const verifyLink = `${this.configService.get<string>('FRONTEND_URL')}/account-verify?token=1`;
-
-    await this.mailService.sendMail(
-      user.email,
-      emailSubject.EMAIL_VERIFICATION,
-      emailTemplate.EMAIL_VERIFICATION,
-      {
-        verificationLink: verifyLink,
-      },
-    );
-
+  async registerDealer(
+    @Body() registerDto: RegisterDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<ApiResponse> {
+    const { accessToken, refreshToken, user } =
+      await this.authService.registerDealer(registerDto);
+    setAuthCookies(response, this.configService, { accessToken, refreshToken });
     return new ApiResponse(
       HttpStatus.CREATED,
-      successMessages.USER_REGISTERED_SUCCESSFULLY,
+      successMessages.DEALER_REGISTERED_SUCCESSFULLY,
       user,
     );
   }
 
-  async getTokens(userId: string, email: string) {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        { sub: userId, email },
-        {
-          secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
-          expiresIn: this.configService.get<string>(
-            'ACCESS_TOKEN_EXPIRED',
-          ) as SignOptions['expiresIn'],
-        },
-      ),
-      this.jwtService.signAsync(
-        { sub: userId, email },
-        {
-          secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
-          expiresIn: this.configService.get<string>(
-            'REFRESH_TOKEN_EXPIRED',
-          ) as SignOptions['expiresIn'],
-        },
-      ),
-    ]);
+  @Post("verifyEmail")
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(
+    @Body() verifyEmailDto: VerifyEmailDto,
+  ): Promise<ApiResponse> {
+    const user = await this.authService.verifyEmail(verifyEmailDto.token);
 
-    return { accessToken, refreshToken };
+    return new ApiResponse(
+      HttpStatus.OK,
+      successMessages.EMAIL_VERIFIED_SUCCESSFULLY,
+      user,
+    );
+  }
+
+  @Post("forgot-password")
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<ApiResponse> {
+    const user = await this.authService.findUserByEmail(
+      forgotPasswordDto.email,
+    );
+
+    if (user) {
+      const resetToken = await this.authService.generatePasswordResetToken(
+        user.id,
+        user.email,
+      );
+
+      const resetLink = `${this.configService.get<string>("FRONTEND_URL")}/login?type=password-reset&token=${resetToken}`;
+
+      await this.mailService.sendMail(
+        user.email,
+        emailSubject.PASSWORD_RESET,
+        emailTemplate.PASSWORD_RESET,
+        {
+          resetLink,
+        },
+      );
+    }
+
+    return new ApiResponse(
+      HttpStatus.OK,
+      successMessages.FORGOT_PASSWORD_EMAIL_SENT,
+    );
+  }
+
+  @Post("validate-reset-token")
+  @HttpCode(HttpStatus.OK)
+  async validateResetToken(
+    @Body() validateResetTokenDto: ValidateResetTokenDto,
+  ): Promise<ApiResponse> {
+    await this.authService.validatePasswordResetToken(
+      validateResetTokenDto.token,
+    );
+
+    return new ApiResponse(HttpStatus.OK, successMessages.RESET_TOKEN_VALID);
+  }
+
+  @Post("reset-password")
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ): Promise<ApiResponse> {
+    await this.authService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.password,
+    );
+
+    return new ApiResponse(
+      HttpStatus.OK,
+      successMessages.PASSWORD_RESET_SUCCESSFUL,
+    );
   }
 }

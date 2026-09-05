@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { UserAddressesModule } from './user-addresses/user-addresses.module';
 import { RedisModule } from './redis/redis.module';
+import { DealersModule } from './dealers/dealers.module';
+import { WarehousesModule } from './warehouses/warehouses.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { RedisModule } from './redis/redis.module';
     MailModule,
     UserAddressesModule,
     RedisModule,
+    DealersModule,
+    WarehousesModule,
   ],
   controllers: [],
   providers: [],
