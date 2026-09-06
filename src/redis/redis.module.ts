@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RedisModule as NestRedisModule } from '@nestjs-modules/ioredis';
+import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { RedisModule as NestRedisModule } from "@nestjs-modules/ioredis";
 
 @Module({
   imports: [
@@ -10,10 +10,15 @@ import { RedisModule as NestRedisModule } from '@nestjs-modules/ioredis';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         isGlobal: true,
-        type: 'single',
+        type: "single",
         options: {
-          host: configService.get<string>('REDIS_HOST'),
-          port: configService.get<number>('REDIS_PORT'),
+          host: configService.get<string>("REDIS_HOST"),
+          port: configService.get<number>("REDIS_PORT"),
+          password: configService.get<string>("REDIS_PASSWORD"),
+          tls:
+            configService.get<string>("NODE_ENV") === "production"
+              ? {}
+              : undefined,
         },
       }),
     }),
