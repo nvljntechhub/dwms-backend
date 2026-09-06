@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -28,11 +29,15 @@ import {
 } from 'src/common/utils/multer-options.utils';
 import { CleanupProfileImageInterceptor } from 'src/common/interceptors/cleanup-profile-image.interceptor';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthJwtPayload } from 'src/auth/types/jwt-payload';
+import { UserRole } from 'src/common/utils/enums/user-role';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
@@ -47,6 +52,7 @@ export class UsersController {
   }
 
   @Post()
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
     FileInterceptor('profileImage', profileImageMulterOptions),
@@ -76,11 +82,13 @@ export class UsersController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.WAREHOUSE_MANAGER)
   @HttpCode(HttpStatus.OK)
   async findAll(
+    @Query() query: PaginationQueryDto,
     @CurrentUser() currentUser: AuthJwtPayload,
   ): Promise<ApiResponse> {
-    const users = await this.usersService.findAll(currentUser.dealerId);
+    const users = await this.usersService.findAll(currentUser.dealerId, query);
     return new ApiResponse(
       HttpStatus.OK,
       successMessages.USERS_FETCHED_SUCCESSFULLY,
@@ -89,6 +97,7 @@ export class UsersController {
   }
 
   @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.WAREHOUSE_MANAGER)
   @HttpCode(HttpStatus.OK)
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -103,6 +112,7 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
     FileInterceptor('profileImage', profileImageMulterOptions),
@@ -152,6 +162,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   async remove(
     @Param('id', ParseUUIDPipe) id: string,

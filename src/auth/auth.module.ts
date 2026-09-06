@@ -9,17 +9,14 @@ import { MailModule } from 'src/mail/mail.module';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { RedisModule } from 'src/redis/redis.module';
-import { DealersModule } from 'src/dealers/dealers.module';
-import { WarehousesModule } from 'src/warehouses/warehouses.module';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 import { ACCESS_JWT, REFRESH_JWT } from './jwt.constants';
 import type { SignOptions } from 'jsonwebtoken';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Dealer, Warehouse]),
-    DealersModule,
-    WarehousesModule,
     RedisModule,
     MailModule,
   ],
@@ -27,6 +24,7 @@ import type { SignOptions } from 'jsonwebtoken';
   providers: [
     AuthService,
     JwtAuthGuard,
+    RolesGuard,
     {
       provide: ACCESS_JWT,
       inject: [ConfigService],
@@ -56,6 +54,6 @@ import type { SignOptions } from 'jsonwebtoken';
         }),
     },
   ],
-  exports: [ACCESS_JWT, JwtAuthGuard, TypeOrmModule],
+  exports: [ACCESS_JWT, JwtAuthGuard, RolesGuard, TypeOrmModule],
 })
 export class AuthModule {}

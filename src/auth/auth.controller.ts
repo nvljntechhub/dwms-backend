@@ -7,6 +7,7 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiResponse } from "src/common/utils/responses/api-response";
 import { RegisterDto } from "./dto/register.dto";
@@ -24,7 +25,14 @@ import { VerifyEmailDto } from "./dto/verify-email.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ValidateResetTokenDto } from "./dto/validate-reset-token.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { VerifyPasswordDto } from "./dto/verify-password.dto";
 import type { Request, Response } from "express";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { RolesGuard } from "./guards/roles.guard";
+import { Roles } from "./decorators/roles.decorator";
+import { CurrentUser } from "./decorators/current-user.decorator";
+import { AuthJwtPayload } from "./types/jwt-payload";
+import { UserRole } from "src/common/utils/enums/user-role";
 import {
   AUTH_COOKIE_NAMES,
   clearAuthCookies,
@@ -69,6 +77,26 @@ export class AuthController {
       refreshToken: nextRefreshToken,
     });
     return new ApiResponse(HttpStatus.OK, successMessages.TOKENS_REFRESHED);
+  }
+
+  @Post("verify-password")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async verifyPassword(
+    @Body() verifyPasswordDto: VerifyPasswordDto,
+    @CurrentUser() currentUser: AuthJwtPayload,
+  ): Promise<ApiResponse> {
+    const result = await this.authService.verifyPassword(
+      currentUser.sub,
+      verifyPasswordDto.password,
+    );
+
+    return new ApiResponse(
+      HttpStatus.OK,
+      successMessages.PASSWORD_VERIFIED,
+      result,
+    );
   }
 
   @Post("logout")

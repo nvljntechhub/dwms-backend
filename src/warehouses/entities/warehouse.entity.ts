@@ -22,6 +22,27 @@ export class Warehouse {
   @Column({ name: 'is_default', type: 'boolean', default: false })
   isDefault: boolean;
 
+  @Column({ type: 'varchar', nullable: true })
+  street?: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  city?: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  state?: string;
+
+  @Column({ name: 'postalCode', type: 'varchar', nullable: true })
+  postalCode?: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  country?: string;
+
+  @Column({ type: 'numeric', precision: 10, scale: 7, nullable: true })
+  latitude?: number;
+
+  @Column({ type: 'numeric', precision: 10, scale: 7, nullable: true })
+  longitude?: number;
+
   @RelationId((warehouse: Warehouse) => warehouse.dealer)
   dealerId: string;
 

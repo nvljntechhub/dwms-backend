@@ -16,11 +16,26 @@ describe('UsersService', () => {
   type MockRepository<T> = Partial<Record<keyof Repository<T>, jest.Mock>>;
   type MockDataSource = Partial<Record<keyof DataSource, jest.Mock>>;
 
+  const mockQueryBuilder = {
+    where: jest.fn().mockReturnThis(),
+    leftJoin: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    distinct: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    addOrderBy: jest.fn().mockReturnThis(),
+    offset: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    clone: jest.fn(),
+    getCount: jest.fn(),
+    getRawMany: jest.fn(),
+  };
+
   const mockRepositoryFactory = () => ({
     create: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    createQueryBuilder: jest.fn(() => mockQueryBuilder),
   });
 
   const mockDataSourceFactory = () => ({
@@ -118,15 +133,24 @@ describe('UsersService', () => {
 
   it('should list only users for the given dealer', async () => {
     const dealerUsers = [{ id: 'u1' }] as User[];
+    mockQueryBuilder.clone.mockReturnValue(mockQueryBuilder);
+    mockQueryBuilder.getCount.mockResolvedValue(1);
+    mockQueryBuilder.getRawMany.mockResolvedValue([{ id: 'u1' }]);
     mockUsersRepository.find.mockResolvedValue(dealerUsers);
 
     const result = await service.findAll('dealer-uuid');
 
-    expect(result).toEqual(dealerUsers);
+    expect(result.items).toEqual(dealerUsers);
+    expect(result.meta).toEqual({
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
+    expect(mockUsersRepository.createQueryBuilder).toHaveBeenCalledWith('user');
     expect(mockUsersRepository.find).toHaveBeenCalledWith({
-      where: { dealer: { id: 'dealer-uuid' } },
+      where: { id: expect.anything() },
       relations: ['addresses'],
-      order: { createdAt: 'DESC' },
     });
   });
 
