@@ -1,0 +1,9 @@
+enum StockMovementType {
+  PO_RECEIPT = 'PO_RECEIPT',
+  SO_DISPATCH = 'SO_DISPATCH',
+  ADJUSTMENT = 'ADJUSTMENT',
+  TRANSFER_IN = 'TRANSFER_IN',
+  TRANSFER_OUT = 'TRANSFER_OUT',
+}
+
+export { StockMovementType };

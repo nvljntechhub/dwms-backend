@@ -49,6 +49,7 @@ type AuthUser = {
   email: string;
   role: UserRole;
   dealerId: string | null;
+  currency: string | null;
   warehouse?: {
     id: string;
     name: string;
@@ -92,6 +93,7 @@ export class AuthService {
     user: User,
     extra?: {
       dealerId?: string;
+      currency?: string;
       warehouse?: AuthUser["warehouse"];
     },
   ): AuthUser {
@@ -103,6 +105,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       dealerId: extra?.dealerId ?? user.dealerId ?? user.dealer?.id ?? null,
+      currency: extra?.currency ?? user.dealer?.currency ?? null,
       ...(extra?.warehouse ? { warehouse: extra.warehouse } : {}),
     };
   }
@@ -136,6 +139,23 @@ export class AuthService {
     if (user.dealer && user.dealer.status !== DealerStatus.ACTIVE) {
       throw new UnauthorizedException(errorMessages.INACTIVE_ACCOUNT);
     }
+  }
+
+  async verifyPassword(userId: string, password: string): Promise<{ verified: true }> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .leftJoinAndSelect('user.dealer', 'dealer')
+      .where('user.id = :userId', { userId })
+      .getOne();
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException(errorMessages.INVALID_CREDENTIALS);
+    }
+
+    this.assertDealerIsActive(user);
+
+    return { verified: true };
   }
 
   async signIn(signInDto: SignInDto) {
@@ -385,6 +405,7 @@ export class AuthService {
         refreshToken,
         user: this.toAuthUser(savedUser, {
           dealerId: savedDealer.id,
+          currency: savedDealer.currency,
           warehouse: {
             id: savedWarehouse.id,
             name: savedWarehouse.name,

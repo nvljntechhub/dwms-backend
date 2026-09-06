@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryFailedError } from 'typeorm';
+import { In, Repository, DataSource, QueryFailedError } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -19,6 +19,16 @@ import { HASH_SALT_ROUNDS } from 'src/config/hash.config';
 import { formatUnknownError } from 'src/common/utils/format-unknown-error';
 import { UserRole } from 'src/common/utils/enums/user-role';
 import { Dealer } from 'src/dealers/entities/dealer.entity';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import {
+  applySearchTerm,
+  applyUserRoleOrder,
+  buildPaginatedResult,
+  buildUserRolePrioritySql,
+  normalizePagination,
+  orderItemsByIds,
+  PaginatedResult,
+} from 'src/common/utils/pagination.utils';
 
 @Injectable()
 export class UsersService {
@@ -82,14 +92,63 @@ export class UsersService {
     }
   }
 
-  async findAll(dealerId?: string | null): Promise<User[]> {
+  async findAll(
+    dealerId?: string | null,
+    query: PaginationQueryDto = {},
+  ): Promise<PaginatedResult<User>> {
     const scopedDealerId = this.requireDealerId(dealerId);
+    const { page, limit, skip, searchTerm } = normalizePagination(query);
 
-    return this.usersRepository.find({
-      where: { dealer: { id: scopedDealerId } },
+    const qb = this.usersRepository
+      .createQueryBuilder('user')
+      .where('user.dealer_id = :dealerId', { dealerId: scopedDealerId });
+
+    if (searchTerm) {
+      qb.leftJoin('user.addresses', 'addresses');
+      applySearchTerm(
+        qb,
+        [
+          'user.firstName',
+          'user.lastName',
+          'user.email',
+          'user.phoneNumber',
+          'CAST(user.role AS text)',
+          'addresses.label',
+          'addresses.city',
+        ],
+        searchTerm,
+      );
+    }
+
+    const total = await qb.clone().distinct(true).getCount();
+    const idQuery = qb
+      .clone()
+      .select('user.id', 'id')
+      .addSelect(buildUserRolePrioritySql('user'))
+      .addSelect('user.createdAt')
+      .distinct(true);
+    applyUserRoleOrder(idQuery);
+    const idRows = await idQuery
+      .offset(skip)
+      .limit(limit)
+      .getRawMany<{ id: string }>();
+
+    if (!idRows.length) {
+      return buildPaginatedResult([], total, page, limit);
+    }
+
+    const ids = idRows.map((row) => row.id);
+    const items = await this.usersRepository.find({
+      where: { id: In(ids) },
       relations: ['addresses'],
-      order: { createdAt: 'DESC' },
     });
+
+    return buildPaginatedResult(
+      orderItemsByIds(items, ids),
+      total,
+      page,
+      limit,
+    );
   }
 
   async findOne(id: string, dealerId?: string | null): Promise<User> {

@@ -1,4 +1,10 @@
 import { DealerStatus } from 'src/common/utils/enums/dealer.enum';
+import {
+  DEFAULT_DEALER_COUNTRY,
+  DEFAULT_DEALER_CURRENCY,
+  DEFAULT_DEALER_LOCALE,
+  DEFAULT_DEALER_TIMEZONE,
+} from 'src/dealers/dealer-settings.constants';
 import { User } from 'src/users/entities/user.entity';
 import { Warehouse } from 'src/warehouses/entities/warehouse.entity';
 import {
@@ -22,6 +28,34 @@ export class Dealer {
 
   @Column({ name: 'tax_id', type: 'varchar', length: 100, nullable: true })
   taxId?: string;
+
+  @Column({
+    type: 'char',
+    length: 3,
+    default: DEFAULT_DEALER_CURRENCY,
+  })
+  currency: string;
+
+  @Column({
+    type: 'char',
+    length: 2,
+    default: DEFAULT_DEALER_COUNTRY,
+  })
+  country: string;
+
+  @Column({
+    type: 'varchar',
+    length: 64,
+    default: DEFAULT_DEALER_TIMEZONE,
+  })
+  timezone: string;
+
+  @Column({
+    type: 'varchar',
+    length: 16,
+    default: DEFAULT_DEALER_LOCALE,
+  })
+  locale: string;
 
   @Column({
     type: 'enum',

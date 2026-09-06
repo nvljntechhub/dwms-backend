@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { diskStorage } from 'multer';
+import { diskStorage, memoryStorage } from 'multer';
 import { existsSync, mkdirSync, unlink } from 'fs';
 import { promisify } from 'util';
 import { extname, join } from 'path';
@@ -55,6 +55,35 @@ export const profileImageMulterOptions = {
   },
   limits: {
     fileSize: 2 * 1024 * 1024, // 2 MB
+  },
+};
+
+const ALLOWED_CSV_MIME_TYPES = new Set([
+  'text/csv',
+  'application/csv',
+  'text/plain',
+  'application/vnd.ms-excel',
+]);
+
+export const csvUploadMulterOptions = {
+  storage: memoryStorage(),
+  fileFilter: (
+    _req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, acceptFile: boolean) => void,
+  ) => {
+    const ext = extname(file.originalname).toLowerCase();
+    if (ext !== '.csv' && !ALLOWED_CSV_MIME_TYPES.has(file.mimetype)) {
+      return cb(new BadRequestException('Only CSV files are allowed'), false);
+    }
+    if (ext && ext !== '.csv') {
+      return cb(new BadRequestException('Only CSV files are allowed'), false);
+    }
+    cb(null, true);
+  },
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2 MB
+    files: 1,
   },
 };
 
